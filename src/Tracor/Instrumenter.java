@@ -458,45 +458,70 @@ public class Instrumenter {
 				}
 
 				public boolean visit(ForStatement node) {
+//					String line = getLineNumber(cu.getLineNumber(node.getStartPosition()));
+//					String lineend = getLineNumber(cu.getLineNumber(node.getStartPosition() + node.getLength()));
+//					if (verbose)
+//						System.out.print("ForStatement:" + "line " + line);
+//
+//					String printMSG = "\"<ForStatement,taken> Line:" + line + " to "
+//							+ lineend + "\"";
+//					CopytoLabel(node);
+//					insertprint("\"<ForStatement,reached> Line:" + line + " to "
+//							+ lineend + "\"");
+//					List<Expression> l = node.updaters();
+//					for (Expression e : l) {
+//						if (e instanceof Assignment) {
+//							String name = ((Assignment) e).getLeftHandSide().toString();
+//							if (verbose)
+//								System.out.print("," + name);
+//							printMSG += "+\",assign:" + name + "=\"+getValue_(" + name + ")+\",type:\"+getType_(" + name
+//									+ ")";
+//						} else if (e instanceof PostfixExpression) {
+//							String name = ((PostfixExpression) e).getOperand().toString();
+//							if (verbose)
+//								System.out.print("," + name);
+//							printMSG += "+\",assign:" + name + "=\"+getValue_(" + name + ")+\",type:\"+getType_(" + name
+//									+ ")";
+//
+//						} else if (e instanceof PrefixExpression) {
+//							if ((((PrefixExpression) e).getOperator()) == PrefixExpression.Operator.INCREMENT
+//									|| (((PrefixExpression) e).getOperator()) == PrefixExpression.Operator.DECREMENT) {
+//								String name = ((PrefixExpression) e).getOperand().toString();
+//								if (verbose)
+//									System.out.print("," + name);
+//								printMSG += "+\",assign:" + name + "=\"+getValue_(" + name + ")+\",type:\"+getType_("
+//										+ name + ")";
+//							}
+//						}
+//					}
+//					if (verbose)
+//						System.out.println();
+//					Statement body = node.getBody();
+//					if (body instanceof Block) {
+//						copyto(body.getStartPosition() + 1);
+//						insertprint(printMSG);
+//						return true;
+//					} else {
+//						copyto(body.getStartPosition());
+//						outputBuffer += "{\n";
+//						insertprint(printMSG);
+//						ProcessSingleStatement(body);
+//						copyto(body.getStartPosition() + body.getLength());
+//						
+//						outputBuffer += "\n}";
+//						return false;
+//					}
 					String line = getLineNumber(cu.getLineNumber(node.getStartPosition()));
-					String lineend = getLineNumber(cu.getLineNumber(node.getStartPosition() + node.getLength()));
+					String lineend = getLineNumber(cu.getLineNumber((node.getStartPosition() + node.getLength())));
+					
 					if (verbose)
-						System.out.print("ForStatement:" + "line " + line);
-
-					String printMSG = "\"<ForStatement,taken> Line:" + line + " to "
-							+ lineend + "\"";
-					CopytoLabel(node);
-					insertprint("\"<ForStatement,reached> Line:" + line + " to "
-							+ lineend + "\"");
-					List<Expression> l = node.updaters();
-					for (Expression e : l) {
-						if (e instanceof Assignment) {
-							String name = ((Assignment) e).getLeftHandSide().toString();
-							if (verbose)
-								System.out.print("," + name);
-							printMSG += "+\",assign:" + name + "=\"+getValue_(" + name + ")+\",type:\"+getType_(" + name
-									+ ")";
-						} else if (e instanceof PostfixExpression) {
-							String name = ((PostfixExpression) e).getOperand().toString();
-							if (verbose)
-								System.out.print("," + name);
-							printMSG += "+\",assign:" + name + "=\"+getValue_(" + name + ")+\",type:\"+getType_(" + name
-									+ ")";
-
-						} else if (e instanceof PrefixExpression) {
-							if ((((PrefixExpression) e).getOperator()) == PrefixExpression.Operator.INCREMENT
-									|| (((PrefixExpression) e).getOperator()) == PrefixExpression.Operator.DECREMENT) {
-								String name = ((PrefixExpression) e).getOperand().toString();
-								if (verbose)
-									System.out.print("," + name);
-								printMSG += "+\",assign:" + name + "=\"+getValue_(" + name + ")+\",type:\"+getType_("
-										+ name + ")";
-							}
-						}
-					}
-					if (verbose)
-						System.out.println();
+						System.out.println("WhileStatement:line " + line);
 					Statement body = node.getBody();
+					String printMSG = "\"<WhileStatement,taken> Line:" + line
+							+ " to " + lineend + "\"";
+					CopytoLabel(node);
+					insertprint("\"<WhileStatement,reached> Line:" + line + " to "
+							+ lineend + "\"");
 					if (body instanceof Block) {
 						copyto(body.getStartPosition() + 1);
 						insertprint(printMSG);
@@ -511,6 +536,7 @@ public class Instrumenter {
 						outputBuffer += "\n}";
 						return false;
 					}
+					
 
 				}
 
