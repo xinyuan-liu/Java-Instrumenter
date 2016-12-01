@@ -171,6 +171,18 @@ public class Instrumenter {
 	public static void copytoEnd() {
 		outputBuffer += source.substring(curChar);
 	}
+	
+	public static boolean insertimport(CompilationUnit cu) {
+		PackageDeclaration pkgdec=cu.getPackage();
+		if(pkgdec!=null)
+		{
+			int lineEnd = cu.getLineNumber(pkgdec.getStartPosition() + pkgdec.getLength());
+			copyLines(lineEnd);
+		}
+		outputBuffer += "import java.io.IOException; \nimport java.io.RandomAccessFile;\n";
+		return true;
+
+	}
 
 	public static void getFilelist(String DirPath, List<String> FileList) {
 		File RootDir = new File(DirPath);
@@ -187,7 +199,7 @@ public class Instrumenter {
 	}
 
 	public static void main(String args[]) {
-		boolean verboset = true;
+		boolean verboset = false;
 
 		// Create a Parser
 		CommandLineParser cmdlparser = new DefaultParser();
@@ -203,7 +215,7 @@ public class Instrumenter {
 			e1.printStackTrace();
 		}
 		// Set the appropriate variables based on supplied options
-		String DirPath = "/Users/liuxinyuan/DefectRepairing/Math3b/src/main/";
+		String DirPath = "/Users/liuxinyuan/DefectRepairing/test";
 		String TraceFilet = "/Users/liuxinyuan/DefectRepairing/a.txt";
 
 		if (commandLine.hasOption('D')) {
@@ -247,6 +259,7 @@ public class Instrumenter {
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
 
 			final CompilationUnit cu = (CompilationUnit) parser.createAST(null);
+			insertimport(cu);
 			cu.accept(new ASTVisitor() {
 
 				public ASTNode getparentstatement(ASTNode node) {
@@ -433,14 +446,6 @@ public class Instrumenter {
 				// //return true;
 				//
 				// }
-
-				public boolean visit(PackageDeclaration node) {
-					int lineEnd = cu.getLineNumber(node.getStartPosition() + node.getLength());
-					copyLines(lineEnd);
-					outputBuffer += "import java.io.IOException; \n import java.io.RandomAccessFile;\n";
-					return true;
-
-				}
 
 				public void endVisit(Assignment node) {
 					if (!isinMethod(node))

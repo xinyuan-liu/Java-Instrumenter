@@ -12,6 +12,7 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeSet;
 
+
 public class TraceParser {
 
 	private static class Variable implements Cloneable, Comparable {
@@ -46,7 +47,6 @@ public class TraceParser {
 
 		@Override
 		public int compareTo(Object arg0) {
-			// TODO Auto-generated method stub
 			if (arg0 instanceof Variable) {
 				return Name.compareTo(((Variable) arg0).Name);
 			}
@@ -237,11 +237,12 @@ public class TraceParser {
 		boolean taken;// 0 for reached, 1 for taken
 		int startLine;
 		int endLine;
-
+		boolean firsttaken;
 		WhileStatement(boolean _taken, int _startLine, int _endLine) {
 			taken = _taken;
 			startLine = _startLine;
 			endLine = _endLine;
+			firsttaken=false;
 		}
 
 		@Override
@@ -250,6 +251,23 @@ public class TraceParser {
 		}
 	}
 
+	private static class DoStatement extends Statement {
+		boolean taken;// 0 for reached, 1 for taken
+		int startLine;
+		int endLine;
+
+		DoStatement(boolean _taken, int _startLine, int _endLine) {
+			taken = _taken;
+			startLine = _startLine;
+			endLine = _endLine;
+		}
+
+		@Override
+		public String toString() {
+			return "DoStatement [taken=" + taken + ", startLine=" + startLine + ", endLine=" + endLine + "]";
+		}
+	}
+	
 	private static class VariableDeclaration extends Statement {
 		Variable var;
 		int Line;
@@ -348,7 +366,7 @@ public class TraceParser {
 
 		void runto(int targetline) {
 			LineVariables last = values.get(values.size() - 1);
-			while (curLine != targetline) {
+			do {
 				if ((pendingjumps.isEmpty() || curLine > pendingjumps.peek().fromline) && curLine > targetline) {
 					break;
 					// throw new Exception("wild line");
@@ -359,7 +377,7 @@ public class TraceParser {
 					curLine++;
 				}
 				values.add(new LineVariables(curLine, last.Variables));
-			}
+			} while (curLine != targetline);
 		}
 
 		Spectrum() {
@@ -392,14 +410,30 @@ public class TraceParser {
 				}
 				if (st instanceof WhileStatement) {
 					int t = ((WhileStatement) st).startLine;
-					runto(t);
+					
+					
 					if (!((WhileStatement) st).taken)
+					{
 						pendingjumps.offer(new Jump(curLine, ((WhileStatement) st).endLine));
-					// curLine = ((WhileStatement) st).endLine;
-					else
-						pendingjumps.offer(new Jump(((WhileStatement) st).endLine, ((WhileStatement) st).startLine));
+						runto(t);
+					}
+					else {
+						if(((WhileStatement) st).firsttaken)
+						{
+							runto(t);
+						}
+						else
+						{
+							pendingjumps.offer(new Jump(((WhileStatement) st).endLine, ((WhileStatement) st).startLine));
+							runto(t);
+						}
+							
+					}
+						
 					// curLine=((WhileStatement) st).startLine;
+					
 				}
+				
 				if (st instanceof VariableDeclaration) {
 					int t = ((VariableDeclaration) st).Line;
 					runto(t);
@@ -423,11 +457,16 @@ public class TraceParser {
 					LineVariables tmp = values.get(values.size() - 1);
 					Set<Variable> add = new TreeSet<Variable>();
 					String s = ((Assignment) st).var.Name;
+					boolean flag=true;
 					for (Variable v : tmp.Variables) {
 						if (v.Name == s) {
+							flag=false;
 							add.add(((Assignment) st).var);
 						} else
 							add.add(v);
+					}
+					if(flag) {
+						add.add(((Assignment) st).var);
 					}
 					values.remove(values.size() - 1);
 					values.add(new LineVariables(t, add));
@@ -590,7 +629,7 @@ public class TraceParser {
 		String label = sc.next();
 		Scanner labelsc = new Scanner(label.substring(1, label.indexOf(">"))).useDelimiter(",");
 		String type = labelsc.next();
-		System.out.println(src);
+		//System.out.println(src);
 		Statement ret = null;
 		String file = null;
 		// System.out.println(type);
@@ -689,7 +728,17 @@ public class TraceParser {
 			}
 			if (st instanceof WhileStatement) {
 				if (((WhileStatement) st).taken) {
-					Stmts.remove(Stmts.size() - 1);
+					Statement s=Stmts.get(Stmts.size()-1);
+					if(s instanceof WhileStatement)
+					{
+						if(((WhileStatement) s).startLine==((WhileStatement)st).startLine && !((WhileStatement) s).taken)
+						{
+							Stmts.remove(Stmts.size() - 1);
+							((WhileStatement) st).firsttaken=true;
+						}
+					}
+					
+					
 				}
 			}
 			Stmts.add(st);
