@@ -407,7 +407,7 @@ public class Instrumenter {
 					if (verbose)
 						System.out.println("Assignment:" + "line " + line + "," + name);
 					copyto(ParentStatement.getStartPosition() + ParentStatement.getLength());
-					String printMSG = "\"<Assignment> assign:" + name + "=\"+getValue_(" + name
+					String printMSG = "\"<Assignment> " + name + "=\"+getValue_(" + name
 							+ ")+\",type:\"+getType_(" + name + ")+\",Line:" + line + "\"";
 					insertprint(printMSG);
 					return;
@@ -427,7 +427,7 @@ public class Instrumenter {
 					if (verbose)
 						System.out.println("Assignment:" + "line " + line + "," + name);
 					copyto(ParentStatement.getStartPosition() + ParentStatement.getLength());
-					String printMSG = "\"<Assignment> assign:" + name + "=\"+getValue_(" + name
+					String printMSG = "\"<Assignment> " + name + "=\"+getValue_(" + name
 							+ ")+\",type:\"+getType_(" + name + ")+\",Line:" + line + "\"";
 					insertprint(printMSG);
 
@@ -450,7 +450,7 @@ public class Instrumenter {
 						if (verbose)
 							System.out.println("Assignment:" + "line " + line + "," + name);
 						copyto(ParentStatement.getStartPosition() + ParentStatement.getLength());
-						String printMSG = "\"<Assignment> assign:" + name + "=\"+getValue_(" + name
+						String printMSG = "\"<Assignment> " + name + "=\"+getValue_(" + name
 								+ ")+\",type:\"+getType_(" + name + ")+\",Line:" + line + "\"";
 						insertprint(printMSG);
 					}

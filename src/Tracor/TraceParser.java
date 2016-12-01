@@ -10,7 +10,9 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.Stack;
 import java.util.TreeSet;
+
 
 
 public class TraceParser {
@@ -300,6 +302,25 @@ public class TraceParser {
 		}
 	}
 
+	
+	//MethodInvocation
+	private static class MethodInvocation extends Statement {
+		String MethodName;
+		int ParaCnt;
+		int Line;
+
+		MethodInvocation(String _MethodName, int _ParaCnt, int _Line) {
+			MethodName = _MethodName;
+			ParaCnt = _ParaCnt;
+			Line = _Line;
+		}
+
+		@Override
+		public String toString() {
+			return "MethodInvoked [MethodName=" + MethodName + ", ParameterNumber=" + ParaCnt + ", Line=" + Line + "]";
+		}
+	}
+	
 	private static class Assignment extends Statement {
 		Variable var;
 		int Line;
@@ -317,17 +338,17 @@ public class TraceParser {
 
 	private static class ReturnStatement extends Statement {
 		// TODO : return value
-		Variable var;
+		
 		int Line;
 
-		ReturnStatement(Variable _var, int _Line) {
-			var = _var;
+		ReturnStatement(int _Line) {
+			
 			Line = _Line;
 		}
 
 		@Override
 		public String toString() {
-			return "ReturnStatement [var=" + var + ", Line=" + Line + "]";
+			return "ReturnStatement [Line=" + Line + "]";
 		}
 	}
 
@@ -366,7 +387,7 @@ public class TraceParser {
 
 		void runto(int targetline) {
 			LineVariables last = values.get(values.size() - 1);
-			do {
+			while (curLine != targetline) {
 				if ((pendingjumps.isEmpty() || curLine > pendingjumps.peek().fromline) && curLine > targetline) {
 					break;
 					// throw new Exception("wild line");
@@ -377,7 +398,7 @@ public class TraceParser {
 					curLine++;
 				}
 				values.add(new LineVariables(curLine, last.Variables));
-			} while (curLine != targetline);
+			}
 		}
 
 		Spectrum() {
@@ -388,6 +409,7 @@ public class TraceParser {
 		void form(List<Statement> Stmts) {
 			values = new ArrayList<LineVariables>();
 			pendingjumps = new LinkedList<Jump>();
+			Stack<Queue<Jump>>CallStack = new Stack<Queue<Jump>>();
 			Iterator<Statement> it = Stmts.iterator();
 			while (it.hasNext()) {
 				Statement st = it.next();
@@ -427,13 +449,28 @@ public class TraceParser {
 							pendingjumps.offer(new Jump(((WhileStatement) st).endLine, ((WhileStatement) st).startLine));
 							runto(t);
 						}
-							
 					}
-						
-					// curLine=((WhileStatement) st).startLine;
-					
 				}
 				
+				if (st instanceof MethodInvoked) {
+					int t = ((MethodInvoked) st).Line;
+					curLine = t;
+					Set<Variable> tmp = new TreeSet<Variable>();
+					tmp.addAll(((MethodInvoked) st).Parameters);
+					values.add(new LineVariables(t, tmp));
+					CallStack.push(pendingjumps);
+					pendingjumps = new LinkedList<Jump>();
+					
+				}
+				if (st instanceof ReturnStatement) {
+					int t = ((ReturnStatement) st).Line;
+					runto(t);
+					pendingjumps=CallStack.pop();
+				}
+				if (st instanceof MethodInvocation) {
+					int t = ((MethodInvocation) st).Line;
+					runto(t);
+				}
 				if (st instanceof VariableDeclaration) {
 					int t = ((VariableDeclaration) st).Line;
 					runto(t);
@@ -443,14 +480,7 @@ public class TraceParser {
 					values.remove(values.size() - 1);
 					values.add(new LineVariables(t, tmp));
 				}
-				if (st instanceof MethodInvoked) {
-					int t = ((MethodInvoked) st).Line;
-					// pendingjumps.offer(new Jump(curLine,t));
-					curLine = t;
-					Set<Variable> tmp = new TreeSet<Variable>();
-					tmp.addAll(((MethodInvoked) st).Parameters);
-					values.add(new LineVariables(t, tmp));
-				}
+				
 				if (st instanceof Assignment) {
 					int t = ((Assignment) st).Line;
 					runto(t);
@@ -472,11 +502,7 @@ public class TraceParser {
 					values.add(new LineVariables(t, add));
 					curLine = t;
 				}
-				if (st instanceof ReturnStatement) {
-					int t = ((ReturnStatement) st).Line;
-					runto(t);
-					// TODO
-				}
+				
 				// System.out.println(values);
 				/*
 				 * System.out.println(st); System.out.println(curLine); for
@@ -632,9 +658,11 @@ public class TraceParser {
 		//System.out.println(src);
 		Statement ret = null;
 		String file = null;
+		int line;
 		// System.out.println(type);
 		switch (type) {
 		case "Method_invoked":
+		{
 			String funcname = labelsc.next();
 			int parac = labelsc.nextInt();
 			labelsc.close();
@@ -644,10 +672,22 @@ public class TraceParser {
 				Variable par = getVariable(labelsc);
 				Parameters.add(par);
 			}
-			int line = getLine(labelsc.next());
+			line = getLine(labelsc.next());
 			file = getFile(labelsc.next());
 			ret = new MethodInvoked(funcname, Parameters, line);
 			break;
+		}
+		case "MethodInvocation":
+		{
+			String funcname = labelsc.next();
+			int parac = labelsc.nextInt();
+			labelsc.close();
+			labelsc = new Scanner(sc.next()).useDelimiter(",");
+			line = getLine(labelsc.next());
+			file = getFile(labelsc.next());
+			ret = new MethodInvocation(funcname,parac,line);
+			break;
+		}
 		case "IfStatement":
 			String temp = labelsc.next();
 			boolean taken = (temp.equals("taken") ? true : false);
@@ -677,10 +717,9 @@ public class TraceParser {
 		case "ReturnStatement":
 			labelsc.close();
 			labelsc = new Scanner(sc.next()).useDelimiter(",");
-			var = getVariable(labelsc);
 			line = getLine(labelsc.next());
 			file = getFile(labelsc.next());
-			ret = new ReturnStatement(var, line);
+			ret = new ReturnStatement(line);
 			break;
 		case "VariableDeclaration":
 			labelsc.close();
