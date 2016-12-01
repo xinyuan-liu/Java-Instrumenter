@@ -257,11 +257,13 @@ public class TraceParser {
 		boolean taken;// 0 for reached, 1 for taken
 		int startLine;
 		int endLine;
+		boolean firsttaken;
 
 		DoStatement(boolean _taken, int _startLine, int _endLine) {
 			taken = _taken;
 			startLine = _startLine;
 			endLine = _endLine;
+			firsttaken=false;
 		}
 
 		@Override
@@ -452,6 +454,28 @@ public class TraceParser {
 					}
 				}
 				
+				if (st instanceof DoStatement) {
+					int t = ((DoStatement) st).startLine;
+					
+					
+					if (!((DoStatement) st).taken)
+					{
+						pendingjumps.offer(new Jump(curLine, ((DoStatement) st).endLine));
+						runto(t);
+					}
+					else {
+						if(((DoStatement) st).firsttaken)
+						{
+							runto(t);
+						}
+						else
+						{
+							pendingjumps.offer(new Jump(((DoStatement) st).endLine, ((DoStatement) st).startLine));
+							runto(t);
+						}
+					}
+				}
+				
 				if (st instanceof MethodInvoked) {
 					int t = ((MethodInvoked) st).Line;
 					curLine = t;
@@ -566,6 +590,14 @@ public class TraceParser {
 		st.endLine = Integer.parseInt(t.substring(t.indexOf(" ", t.indexOf(" ") + 1) + 1));
 	}
 
+	public static void getBranchLines(String t, DoStatement st) {
+		if (t.startsWith(" "))
+			t = t.substring(1);
+		// System.out.println("getBranchLines from \"" + t + "\"");
+		st.startLine = Integer.parseInt(t.substring(t.indexOf(":") + 1, t.indexOf(" ")));
+		st.endLine = Integer.parseInt(t.substring(t.indexOf(" ", t.indexOf(" ") + 1) + 1));
+	}
+	
 	public static void getBranchLines(String t, WhileStatement st) {
 		if (t.startsWith(" "))
 			t = t.substring(1);
@@ -704,7 +736,14 @@ public class TraceParser {
 			sc.useDelimiter(",");
 			getBranchLines(sc.next(), (WhileStatement) ret);
 			file = getFile(sc.next());
-
+			break;
+		case "DoStatement":
+			temp = labelsc.next();
+			taken = (temp.equals("taken") ? true : false);
+			ret = new DoStatement(taken, 0, 0);
+			sc.useDelimiter(",");
+			getBranchLines(sc.next(), (DoStatement) ret);
+			file = getFile(sc.next());
 			break;
 		case "Assignment":
 			labelsc.close();
@@ -776,8 +815,19 @@ public class TraceParser {
 							((WhileStatement) st).firsttaken=true;
 						}
 					}
-					
-					
+				}
+			}
+			if (st instanceof DoStatement) {
+				if (((DoStatement) st).taken) {
+					Statement s=Stmts.get(Stmts.size()-1);
+					if(s instanceof DoStatement)
+					{
+						if(((DoStatement) s).startLine==((DoStatement)st).startLine && !((DoStatement) s).taken)
+						{
+							Stmts.remove(Stmts.size() - 1);
+							((DoStatement) st).firsttaken=true;
+						}
+					}
 				}
 			}
 			Stmts.add(st);
@@ -790,7 +840,6 @@ public class TraceParser {
 
 	public static void main(String args[]) {
 		String TraceFile = "/Users/liuxinyuan/DefectRepairing/a.txt";
-		
 		
 		Spectrum spec = new Spectrum();
 		try {
