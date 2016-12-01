@@ -69,6 +69,36 @@ public class TraceParser {
 		}
 	}
 
+	private static class VarLong extends Variable {
+		long Value;
+
+		VarLong(String _Name, String _Type, long _Value) {
+			Name = _Name;
+			Type = _Type;
+			Value = _Value;
+		}
+
+		@Override
+		public String toString() {
+			return "VarLong [Name=" + Name + ", Value=" + Value + "]";
+		}
+	}
+	
+	private static class VarByte extends Variable {
+		byte Value;
+
+		VarByte(String _Name, String _Type, Byte _Value) {
+			Name = _Name;
+			Type = _Type;
+			Value = _Value;
+		}
+
+		@Override
+		public String toString() {
+			return "VarByte [Name=" + Name + ", Value=" + Value + "]";
+		}
+	}
+	
 	private static class VarString extends Variable {
 		String Value;
 
@@ -439,102 +469,7 @@ public class TraceParser {
 			}
 		}
 
-		public double diff(Spectrum spec2, Mode diffmode) {
-			double ret = 0;
-			Iterator<LineVariables> it1 = values.iterator(), it2 = spec2.values.iterator();
-			int min = spec2.values.size() < values.size() ? spec2.values.size() : values.size();
-			int max = spec2.values.size() > values.size() ? spec2.values.size() : values.size();
-			ret += (max - min) * diffmode.sizediffw;
-			switch (diffmode.mode) {
-			case Default:
-				while (it1.hasNext() && it2.hasNext()) {
-					LineVariables l1 = it1.next(), l2 = it2.next();
-					if (l1.line != l2.line)
-						ret += diffmode.linediffw;
-					else {
-						if (!l1.Variables.equals(l2.Variables))
-							ret += diffmode.varw;
-					}
-				}
-				break;
-			case LCS:
-				int f[][] = new int[values.size()][spec2.values.size()];
-				int prev[][] = new int[values.size()][spec2.values.size()];
-				for (int i = 1; it1.hasNext(); i++) {
-					LineVariables l1 = it1.next();
-					for (int j = 1; it2.hasNext(); j++) {
-						LineVariables l2 = it2.next();
-						if (l1.line == l2.line) {
-							prev[i][j] = 0;
-							f[i][j] = f[i - 1][j - 1] + 1;
-						} else if (f[i - 1][j] <= f[i][j - 1]) {// 优先让spec2失配
-							f[i][j] = f[i][j - 1];
-							prev[i][j] = 2;
-						} else {
-							f[i][j] = f[i - 1][j];
-							prev[i][j] = 1;
-						}
-					}
-				}
-				ret += (min - f[values.size()][spec2.values.size()]) * diffmode.linediffw;
-				for (int i = values.size(), j = spec2.values.size();;) {
-					if (i == 0 || j == 0)
-						break;
-					if (prev[i][j] == 0) {
-						int neq = values.get(i - 1).Variables.equals(spec2.values.get(j - 1).Variables) ? 0 : 1;
-						ret += neq * diffmode.varw;
-						i--;
-						j--;
-					} else if (prev[i][j] == 1)
-						i--;
-					else if (prev[i][j] == 2)
-						j--;
-				}
-				break;
-			case LCS_Bestfit:
-				double b[][][] = new double[values.size()][spec2.values.size()][min];
-				boolean visited[][][] = new boolean[values.size()][spec2.values.size()][min];
-				int bprev[][][] = new int[values.size()][spec2.values.size()][min];
-				int maxlcs = 0;
-				for (int i = 1; it1.hasNext(); i++) {
-					LineVariables l1 = it1.next();
-					for (int j = 1; it2.hasNext(); j++) {
-						LineVariables l2 = it2.next();
-						int maxk = i < j ? i : j;
-						for (int k = 0; k <= maxk; k++) {
-							if (l1.line == l2.line && k != 0) {
-								bprev[i][j][k] = 0;
-								int neq = values.get(i - 1).Variables.equals(spec2.values.get(j - 1).Variables) ? 0 : 1;
-								b[i][j][k] = b[i - 1][j - 1][k - 1] + neq * diffmode.varw;
-								maxlcs = maxlcs > k ? maxlcs : k;
-								visited[i][j][k] = true;
-							}
-							if (!visited[i - 1][j][k] && !visited[i][j - 1][k])
-								continue;
-							if ((visited[i - 1][j][k] && !visited[i][j - 1][k]) || (visited[i - 1][j][k]
-									&& visited[i][j - 1][k] && b[i - 1][j][k] < b[i][j - 1][k])) {
-								if (b[i][j][k] > b[i - 1][j][k]) {
-									b[i][j][k] = b[i - 1][j][k];
-									bprev[i][j][k] = 1;
-									visited[i][j][k] = true;
-								}
-							} else {
-								if (b[i][j][k] > b[i][j - 1][k]) {
-									b[i][j][k] = b[i][j - 1][k];
-									bprev[i][j][k] = 2;
-									visited[i][j][k] = true;
-								}
-							}
-						}
-					}
-				}
-				ret += (min - maxlcs) * diffmode.linediffw;
-				ret += b[values.size()][spec2.values.size()][maxlcs];
-				break;
-			default:
-			}
-			return ret;
-		}
+		
 	}
 
 	public static int getLine(String s) {
@@ -590,6 +525,18 @@ public class TraceParser {
 			ret = new VarInt(name, type, (int) value);
 			ret.Defined = true;
 			break;
+		case "long":
+			name = sc2.next();
+			value = sc2.nextLong();
+			ret = new VarLong(name, type, (long) value);
+			ret.Defined = true;
+			break;
+		case "byte":
+			name = sc2.next();
+			value = sc2.nextByte();
+			ret = new VarByte(name, type, (byte) value);
+			ret.Defined = true;
+			break;
 		case "short":
 			name = sc2.next();
 			value = sc2.nextShort();
@@ -643,7 +590,7 @@ public class TraceParser {
 		String label = sc.next();
 		Scanner labelsc = new Scanner(label.substring(1, label.indexOf(">"))).useDelimiter(",");
 		String type = labelsc.next();
-
+		System.out.println(src);
 		Statement ret = null;
 		String file = null;
 		// System.out.println(type);
@@ -753,41 +700,23 @@ public class TraceParser {
 		return Stmts;
 	}
 
-	public static int main(String args[]) {
-		/*
-		 * CommandLineParser cmdlparser = new DefaultParser(); Options options =
-		 * new Options(); options.addOption("T", "TraceFile", true,
-		 * "input file1"); try { CommandLine commandLine =
-		 * cmdlparser.parse(options, args); } catch (ParseException e) { // TODO
-		 * Auto-generated catch block e.printStackTrace(); }
-		 */
-		String TraceFile1 = "", TraceFile2 = "";
-		TraceFile1 = args[0];
-		TraceFile2 = args[1];
-		/*
-		 * if( commandLine.hasOption('T') ) { TraceFilet =
-		 * commandLine.getOptionValue('T'); }
-		 */
-
-		System.out.println("Spec1:");
-		Spectrum spec1 = new Spectrum();
+	public static void main(String args[]) {
+		String TraceFile = "/Users/liuxinyuan/DefectRepairing/a.txt";
+		
+		
+		Spectrum spec = new Spectrum();
 		try {
-			spec1.form(parsetrace(TraceFile1));
+			spec.form(parsetrace(TraceFile));
 		} catch (IOException e) {
 			System.out.println("parse Tracefile1 failed");
 			e.printStackTrace();
 		}
-		System.out.println("Spec2:");
-		Spectrum spec2 = new Spectrum();
-		try {
-			spec2.form(parsetrace(TraceFile2));
-		} catch (IOException e) {
-			System.out.println("parse Tracefile2 failed");
-			e.printStackTrace();
+		for(LineVariables lv: spec.values)
+		{
+			System.out.println (lv);
 		}
-		double ret = spec1.diff(spec2, new Spectrum.Mode(Spectrum.Mode.ModeEnum.Default, 0.2, 1, 2));
-		System.out.println(ret);
-		return 0;
+		
+		
 	}
 
 }
