@@ -30,6 +30,7 @@ import org.eclipse.jdt.core.dom.WhileStatement;
 import org.eclipse.jdt.core.dom.IfStatement;
 import org.eclipse.jdt.core.dom.LabeledStatement;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -49,6 +50,7 @@ import org.apache.commons.cli.CommandLine;
 public class Instrumenter {
 
 	public static String readFileToString(String filePath)  {
+		
 		StringBuilder fileData = new StringBuilder(1000);
 		BufferedReader reader;
 		try {
@@ -95,44 +97,10 @@ public class Instrumenter {
 		outputBuffer = new String();
 		LineNumberMap=new HashMap<Integer,String>();
 	}
-	
-	public static void ConstructMap(String FilePath) {
-		BufferedReader br = new BufferedReader(new StringReader(source));
-		String line;
-		int ln=0;
-		int temp1=0,temp2=1;
-		try {
-			while((line=br.readLine())!=null)
-			{
-				ln++;
-				int i=line.length()-1;
-				Pattern pattern=Pattern.compile(".*    //[0-9]+$");
-				Matcher matcher = pattern.matcher(line);
-				if(matcher.matches())
-					for(;i>=0;i--)
-					{
-						if(line.charAt(i)=='/')
-						{
-							temp1=(int)Double.parseDouble(line.substring(i+1));
-							temp2=1;
-							LineNumberMap.put(ln, line.substring(i+1) );
-							break;
-						}
-					}
-				else
-				{
-					temp2++;
-					LineNumberMap.put(ln, temp1+"."+temp2);
-				}
-			}
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
+
 	public static String getLineNumber(int ln)
 	{
-		return LineNumberMap.get(ln);
+		return String.valueOf(ln);
 	}
 	
 	public static void copyaLine() {
@@ -247,13 +215,11 @@ public class Instrumenter {
 		int CurNum = 0;
 
 		for (final String FilePath : filelist)
-
 		{
 			init();
 			System.out.println(FilePath);
 			source = readFileToString(FilePath);
 			
-			ConstructMap(FilePath);
 
 			parser.setSource(source.toCharArray());
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -288,21 +254,11 @@ public class Instrumenter {
 					return false;
 				}
 
+				
 				public void insertprint(String printMSG) {
 					if (verbose)
 						outputBuffer += "\ndebug:" + printMSG + "\n";
 					else
-						// outputBuffer += "\ntry {\n"
-						// +"RandomAccessFile randomFile = new
-						// RandomAccessFile(\""+TraceFile+"\", \"rw\");\n"
-						// +"long fileLength = randomFile.length();\n"
-						// +"randomFile.seek(fileLength);\n"
-						// +"randomFile.writeBytes("+ printMSG
-						// +"+\","+FilePath+"\""+"+ \"\\n\");\n"
-						// +"randomFile.close();\n"
-						// +"} catch (IOException e__e__e) {\n"
-						// +"e__e__e.printStackTrace();\n"
-						// +"}\n";
 						outputBuffer += "\nprintRuntimeMSG(" + printMSG + ");\n";
 				}
 
@@ -386,7 +342,9 @@ public class Instrumenter {
 						node = node.getParent();
 					copyto(node.getStartPosition());
 				}
-
+				
+				
+				
 				public boolean visit(TypeDeclaration node) {
 					if (verbose)
 						System.out.println("TypeDeclaration:Line " + cu.getLineNumber(node.getStartPosition()));
@@ -433,19 +391,6 @@ public class Instrumenter {
 					}
 				}
 
-				// public void endvisit (ExpressionStatement Node)
-				// {
-				//
-				//
-				// if(curChar==Node.getStartPosition()+Node.getLength())
-				// return;
-				//
-				// int line=cu.getLineNumber(Node.getStartPosition());
-				// copyto(Node.getStartPosition()+Node.getLength());
-				// insertprint("\"Line "+line+"\"");
-				// //return true;
-				//
-				// }
 
 				public void endVisit(Assignment node) {
 					if (!isinMethod(node))
@@ -681,22 +626,25 @@ public class Instrumenter {
 					
 				}
 				
-				// public boolean visit(ReturnStatement node) {
-				// int line=cu.getLineNumber(node.getStartPosition());
-				// if(verbose)System.out.print("ReturnStatement:line "+line);
-				//
-				//
-				// copyto(node.getStartPosition());
-				// outputBuffer+="{";
-				// String printMSG = "\"<ReturnStatement>
-				// ReturnValue=\"+getValue_(" + node.getExpression() +
-				// ")+\",type:\"+getType_("+node.getExpression()+")+\",Line
-				// "+line+"\"";
-				// insertprint(printMSG);
-				// copyto(node.getStartPosition()+node.getLength());
-				// outputBuffer+="}";
-				// return false;
-				// }
+				public boolean visit (MethodInvocation node) {
+					Statement s=(Statement) getparentstatement(node);
+					CopytoLabel(s);
+					String Line=getLineNumber(cu.getLineNumber(s.getStartPosition()));
+					//int paranum;
+					String printMSG="\"<MethodInvocation,"+node.getName()+","+node.arguments().size()+"> Line:"+Line+"\"";
+					insertprint(printMSG);
+					return true;
+				}
+				
+				 public boolean visit(ReturnStatement node) {
+					 String Line=getLineNumber(cu.getLineNumber(node.getStartPosition()));
+					 if(verbose)System.out.print("ReturnStatement:line "+Line);
+					 copyto(node.getStartPosition());
+					 String printMSG="\"<ReturnStatement> Line:"+Line+"\"";
+					 insertprint(printMSG);
+
+					 return false;
+				 }
 
 			});
 			copytoEnd();
