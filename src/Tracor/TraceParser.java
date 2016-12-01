@@ -839,13 +839,13 @@ public class TraceParser {
 	}
 
 	public static void main(String args[]) {
-		String TraceFile = "/Users/liuxinyuan/DefectRepairing/a.txt";
+		String TraceFile = args[0];
 		
 		Spectrum spec = new Spectrum();
 		try {
 			spec.form(parsetrace(TraceFile));
 		} catch (IOException e) {
-			System.out.println("parse Tracefile1 failed");
+			System.out.println("parse Tracefile failed");
 			e.printStackTrace();
 		}
 		for(LineVariables lv: spec.values)

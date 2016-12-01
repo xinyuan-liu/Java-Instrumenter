@@ -653,6 +653,7 @@ public class Instrumenter {
 
 			if (!verbose) {
 				writeStringToFile(FilePath,outputBuffer);
+				PreProcessor.process(FilePath);
 				CurNum++;
 
 				System.out.println(CurNum + "/" + TotalNum);
