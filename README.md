@@ -6,7 +6,7 @@ make build/rebuild
 
 make preprocess ARGS="source_file"（保证每行只有一条语句。一般不需要预处理。）
 
-make instrument ARGS="-d source_file_dir -t trace_file_path"
+make instrument ARGS="-D source_file_dir -T trace_file_path"
 
 make parse ARGS="trace_file_path"
 
