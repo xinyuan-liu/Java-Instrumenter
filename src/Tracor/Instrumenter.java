@@ -303,8 +303,11 @@ public class Instrumenter {
 
 					List<SingleVariableDeclaration> parameters = node.parameters();
 					copyto(body.getStartPosition() + 1);
-
-					String printMSG = "\"<Method_invoked," + node.getName().toString() + "," + parameters.size()
+                    
+                    String printMSG="\"<MethodInvocation,"+node.getName()+","+parameters.size()+"> Line:"+Thread.currentThread().getStackTrace()[2].getLineNumber()+"\"";
+                    insertprint(printMSG);
+                    
+					printMSG = "\"<Method_invoked," + node.getName().toString() + "," + parameters.size()
 							+ "> \"";
 					boolean firstVar = true;
 					if (!judgePrint(node))
@@ -652,22 +655,16 @@ public class Instrumenter {
 					
 				}
 				
-				public boolean visit (MethodInvocation node) {
-					Statement s=(Statement) getparentstatement(node);
-					CopytoLabel(s);
-					String Line=getLineNumber(cu.getLineNumber(s.getStartPosition()));
-					//int paranum;
-					String printMSG="\"<MethodInvocation,"+node.getName()+","+node.arguments().size()+"> Line:"+Line+"\"";
-					insertprint(printMSG);
-					return true;
-				}
 				
 				 public boolean visit(ReturnStatement node) {
 					 String Line=getLineNumber(cu.getLineNumber(node.getStartPosition()));
 					 if(verbose)System.out.print("ReturnStatement:line "+Line);
-					 copyto(node.getStartPosition());
-					 String printMSG="\"<ReturnStatement> Line:"+Line+"\"";
-					 insertprint(printMSG);
+                     copyto(node.getStartPosition());
+                     outputBuffer+="{";
+                     String printMSG="\"<ReturnStatement> Line:"+Line+"\"";
+                     insertprint(printMSG);
+                     copyto(node.getStartPosition()+node.getLength());
+                     outputBuffer+="}";
 
 					 return false;
 				 }
@@ -683,8 +680,7 @@ public class Instrumenter {
 				CurNum++;
 
 				System.out.println(CurNum + "/" + TotalNum);
-				// if(CurNum==16)
-				// break;
+
 			}
 		}
 	}
