@@ -204,7 +204,7 @@ public class Instrumenter {
 		
 		if (verbose)
 			filelist.add(new String(
-					"/Users/liuxinyuan/DefectRepairing/Math3b/src/main/java/org/apache/commons/math3/complex/Complex.java"));
+					"/Users/liuxinyuan/DefectRepairing/Math82b/src/main/java/org/apache/commons/math/optimization/GoalType.java"));
 		else
 			getFilelist(DirPath, filelist);
 
@@ -670,13 +670,14 @@ public class Instrumenter {
 				 }
 
 			});
+            
 			copytoEnd();
 			if (verbose)
 				System.out.print(outputBuffer);
 
 			if (!verbose) {
 				writeStringToFile(FilePath,outputBuffer);
-				PreProcessor.process(FilePath);
+				//PreProcessor.process(FilePath);
 				CurNum++;
 
 				System.out.println(CurNum + "/" + TotalNum);
