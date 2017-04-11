@@ -304,8 +304,8 @@ public class Instrumenter {
 					List<SingleVariableDeclaration> parameters = node.parameters();
 					copyto(body.getStartPosition() + 1);
                     
-                    String printMSG="\"<MethodInvocation,"+node.getName()+","+parameters.size()+"> Line:"+Thread.currentThread().getStackTrace()[2].getLineNumber()+"\"";
-                    insertprint(printMSG);
+                    String printMSG;//="\"<MethodInvocation,"+node.getName()+","+parameters.size()+"> Line:"+Thread.currentThread().getStackTrace()[2].getLineNumber()+"\"";
+                    //insertprint(printMSG);
                     
 					printMSG = "\"<Method_invoked," + node.getName().toString() + "," + parameters.size()
 							+ "> \"";
