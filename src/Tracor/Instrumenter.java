@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
+import org.eclipse.jdt.core.dom.AnonymousClassDeclaration;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.ASTVisitor;
@@ -132,7 +132,7 @@ public class Instrumenter {
 			}
 		}
 		curChar = pos;
-		// System.out.println(preChar+","+pos);
+		//System.out.println(preChar+","+pos);
 		outputBuffer += source.substring(preChar, pos);
 	}
 
@@ -204,7 +204,7 @@ public class Instrumenter {
 		
 		if (verbose)
 			filelist.add(new String(
-					"/Users/liuxinyuan/DefectRepairing/Math82b/src/main/java/org/apache/commons/math/optimization/GoalType.java"));
+					"/Users/liuxinyuan/DefectRepairing/Lang42b/src/pending/CalendarUtils.java"));
 		else
 			getFilelist(DirPath, filelist);
 
@@ -245,6 +245,9 @@ public class Instrumenter {
 				public boolean isinMethod(ASTNode node) {
 					while (node != null) {
 						node = node.getParent();
+                        if (node instanceof AnonymousClassDeclaration){
+							return false;
+						}
 						if (node instanceof MethodDeclaration) {
 							if (judgePrint((MethodDeclaration) node))
 								return false;
